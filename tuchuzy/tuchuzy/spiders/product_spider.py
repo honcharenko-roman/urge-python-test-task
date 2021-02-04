@@ -1,3 +1,4 @@
+import scrapy
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 
@@ -6,23 +7,36 @@ class ProductCrawlSpider(CrawlSpider):
     name = 'tuchuzy'
     allowed_domains = ['tuchuzy.com']
     start_urls = ['https://www.tuchuzy.com/']
+    denied_urls = ['https://www.tuchuzy.com/collections/new-arrivals',
+                   'https://www.tuchuzy.com/collections/back-in-stock',
+                   'https://www.tuchuzy.com/collections/exclusives',
+                   'https://www.tuchuzy.com/collections/best-sellers'
+                   ]
 
     rules = (
-        # Extract links matching 'category.php' (but not matching 'subsection.php')
-        # and follow links from them (since no callback means follow=True by default).
-        Rule(LinkExtractor(restrict_css=("li[class^='site-nav--has-submenu main-menu']",)), callback='parse_item'),
-        # Extract links matching 'item.php' and parse them with the spider's method parse_item
-        # Rule(LinkExtractor(allow=('item\.php',)), callback='parse_item'),
+        Rule(LinkExtractor(
+            restrict_xpaths="//span[contains(text(), 'By Category')]"
+                            "/following-sibling::ul/li"
+                            "/a[contains(@href,'/collections/')]",
+            deny=denied_urls,
+        ), callback='parse_category'),
     )
 
-    def parse_item(self, response):
-        self.logger.info('Hi, this is an item page! %s', response.url)
+    def parse_category(self, response):
+        # pass
 
-        _count = 0
-        for test in response.css("div[class^='product-grid-item grid__item xlarge-up--one-quarter one-half']"):
-            _count += 1
-            self.logger.info(_count)
+        if 'https://www.tuchuzy.com/collections/dresses' in response.url:
+            self.logger.info('Hi, this is an item page! %s', response.url)
+            next_page = response.css('span > a').get()
+            print(response.url, next_page)
+            if next_page is not None:
+                next_page = response.urljoin(next_page)
+                yield scrapy.Request(next_page, callback=self.parse_category)
 
+        # for test in response.css("div[class^='product-grid-item grid__item xlarge-up--one-quarter one-half'] "
+        #                          "> a[href^='/collections/']"):
+        #     _count += 1
+        #     self.logger.info(_count)
         # l = ItemLoader(item=Product(), response=response)
         #
         # name = scrapy.Field()
