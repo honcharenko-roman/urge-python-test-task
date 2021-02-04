@@ -4,12 +4,40 @@
 # https://docs.scrapy.org/en/latest/topics/items.html
 
 import scrapy
+from itemloaders.processors import MapCompose
+from scrapy.loader.processors import TakeFirst
+
+
+def transform_price(value: str):
+    return value.replace('$', '').replace('.', '')
+
+
+def transform_srcset(value: str):
+    return value.replace('\t', '') \
+        .replace('\n', '') \
+        .replace('//', '')
+
+
+def joiner(value):
+    return list(value)
+
+
+def get_highest_resolution(value: str):
+    return value.split(', ')[-1].split(' ')[0].strip()
 
 
 class Product(scrapy.Item):
-    name = scrapy.Field()
-    brand = scrapy.Field()
-    category = scrapy.Field()
-    image_links = scrapy.Field()
-    price = scrapy.Field(serializer=str)
-    sale_price = scrapy.Field(serializer=str)
+    name = scrapy.Field(output_processor=TakeFirst())
+    brand = scrapy.Field(output_processor=TakeFirst())
+    category = scrapy.Field(output_processor=TakeFirst())
+    image_links = scrapy.Field(
+        input_processor=MapCompose(transform_srcset, get_highest_resolution),
+    )
+    price = scrapy.Field(
+        input_processor=MapCompose(transform_price),
+        output_processor=TakeFirst()
+    )
+    sale_price = scrapy.Field(
+        input_processor=MapCompose(transform_price),
+        output_processor=TakeFirst()
+    )
