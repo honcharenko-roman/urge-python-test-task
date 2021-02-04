@@ -6,7 +6,10 @@
 import scrapy
 
 
-class TuchuzyItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class Product(scrapy.Item):
+    name = scrapy.Field()
+    brand = scrapy.Field()
+    category = scrapy.Field()
+    image_links = scrapy.Field()
+    price = scrapy.Field(serializer=str)
+    sale_price = scrapy.Field(serializer=str)
