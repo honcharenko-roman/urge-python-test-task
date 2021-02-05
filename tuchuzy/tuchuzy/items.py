@@ -13,13 +13,7 @@ def transform_price(value: str):
 
 
 def transform_srcset(value: str):
-    return value.replace('\t', '') \
-        .replace('\n', '') \
-        .replace('//', '')
-
-
-def joiner(value):
-    return list(value)
+    return value.replace('//', '')
 
 
 def get_highest_resolution(value: str):
@@ -28,10 +22,10 @@ def get_highest_resolution(value: str):
 
 class Product(scrapy.Item):
     name = scrapy.Field(output_processor=TakeFirst())
-    brand = scrapy.Field(output_processor=TakeFirst())
+    brand = scrapy.Field(input_processor=MapCompose(str.upper))
     category = scrapy.Field(output_processor=TakeFirst())
     image_links = scrapy.Field(
-        input_processor=MapCompose(transform_srcset, get_highest_resolution),
+        input_processor=MapCompose(str.strip, transform_srcset, get_highest_resolution),
     )
     price = scrapy.Field(
         input_processor=MapCompose(transform_price),
